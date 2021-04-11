@@ -40,3 +40,8 @@ client message:  {"method": "bad_method", "text": "Awesome movie"}
 [error] unknown method: bad_method
 server message:  error: unknown method
 ```
+If `server.py` is called with second argument
+```
+PS C:\Users\Yalikesi\Documents\server> python server.py filename
+```
+everything will be logged to `filename` in the same folder as server: [example](https://github.com/Yalikesifulei/iasa_cn_project/blob/main/test_log.txt).
