@@ -1,0 +1,30 @@
+----- Sun Apr 11 11:58:42 2021 -----
+[info]	loading model files...
+	done in 6.924339 sec
+[start]	listening at ('127.0.0.1', 8888)
+
+Sun Apr 11 12:00:49 2021 | connected by ('127.0.0.1', 65243)
+client message:	 {"method": "similar", "text": "Really bad movie"}
+server message:	 The banner says it all, this is one really bad movie, which is sad because I normally like Sheffer, and I have been impressed with Andrea Roth in other roles. This, however, is terrible. I wont waste any more time...its just that bad.
+
+Sun Apr 11 12:00:51 2021 | connected by ('127.0.0.1', 65244)
+client message:	 {"method": "predict_proba", "text": "Really bad movie"}
+server message:	 positive 0.004% | negative 99.996%
+
+Sun Apr 11 12:00:54 2021 | connected by ('127.0.0.1', 65245)
+client message:	 {"method": "predict", "text": "Nice"}
+server message:	 positive
+
+[end]	server closed with KeyboardInterrupt
+
+----- Sun Apr 11 12:01:29 2021 -----
+[info]	loading model files...
+	done in 9.310904 sec
+[start]	listening at ('127.0.0.1', 8888)
+
+Sun Apr 11 12:01:49 2021 | connected by ('127.0.0.1', 65258)
+client message:	 {"method": "predict_proba", "text": "Nice"}
+server message:	 positive 97.128% | negative 2.872%
+
+[end]	server closed with KeyboardInterrupt
+

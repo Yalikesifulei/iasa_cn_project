@@ -1,5 +1,6 @@
 import socket
 import sys
+import contextlib
 import json
 from predictor import predict, predict_proba, similar
 from joblib import load
@@ -7,14 +8,36 @@ import pandas as pd
 from scipy.sparse import load_npz
 from datetime import datetime
 
+@contextlib.contextmanager
+def smart_open(fname=None):
+    fout = open(fname, 'a') if fname else sys.stdout
+    try:
+        yield fout
+    finally:
+        if fout is not sys.stdout:
+            fout.close()
+
 class Server:
-    def __init__(self, tfidf, model, encoded_words, reviews, host='127.0.0.1', port=8888):
+    def __init__(self, model_path, host='127.0.0.1', port=8888, log_file=None):
         self.host = host
         self.port = port
-        self.tfidf = tfidf
-        self.model = model
-        self.encoded_words = encoded_words
-        self.reviews = reviews
+        self.model_path = model_path
+        self.log_file = log_file
+        if self.log_file:
+            print(f'logging into {self.log_file}')
+            now = datetime.now()
+            with smart_open(self.log_file) as fout:
+                print(f'----- {now.strftime("%c")} -----', file=fout)
+        with smart_open(self.log_file) as fout:
+            print('[info]\tloading model files...', file=fout)
+        tick = datetime.now()    
+        self.tfidf = load(self.model_path + 'tfidf.joblib')
+        self.model = load(self.model_path + 'model.joblib')
+        self.encoded_words = load_npz(self.model_path + 'encoded_words.npz')
+        self.reviews = pd.read_csv(self.model_path + 'reviews.csv', index_col='id')
+        tock = datetime.now()
+        with smart_open(self.log_file) as fout:
+            print(f'\tdone in {(tock - tick).seconds}.{(tock - tick).microseconds} sec', file=fout)
 
     def start(self):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -22,28 +45,34 @@ class Server:
         s.bind((self.host, self.port))
         s.listen()
         s.settimeout(0.1)
-        print(f'[start] listening at {s.getsockname()}\n')
+        with smart_open(self.log_file) as fout:
+            print(f'[start]\tlistening at {s.getsockname()}\n', file=fout)
         try:
             while True:
                 try:
                     conn, addr = s.accept()
                     now = datetime.now()
-                    print(f'{now.strftime("%c")}  | connected by {addr}')
+                    with smart_open(self.log_file) as fout:
+                        print(f'{now.strftime("%c")} | connected by {addr}', file=fout)
                     data = conn.recv(1024)
                     if not data:
-                        print('[error] client disconnected')
+                        with smart_open(self.log_file) as fout:
+                            print('[error] client disconnected', file=fout)
                     else:
-                        print(f'client message:\t {data.decode()}')
+                        with smart_open(self.log_file) as fout:
+                            print(f'client message:\t {data.decode()}', file=fout)
                         response = self.handle_request(data)
                         conn.sendall(response)
-                        print(f'server message:\t {response.decode()}\n')
+                        with smart_open(self.log_file) as fout:
+                            print(f'server message:\t {response.decode()}\n', file=fout)
                         conn.close()
                 except socket.timeout:
                     pass
                 except KeyboardInterrupt:
                     pass
         except KeyboardInterrupt:
-            print('[end] server closed with KeyboardInterrupt')
+            with smart_open(self.log_file) as fout:
+                print('[end]\tserver closed with KeyboardInterrupt\n', file=fout)
             
     def handle_request(self, data):
         req = json.loads(data.decode())
@@ -60,19 +89,17 @@ class Server:
             res_str = f'{res}'
             return res_str.encode()
         else:
-            print(f'[error] unknown method: {req["method"]}')
+            with smart_open(self.log_file) as fout:
+                print(f'[error]\tunknown method: {req["method"]}', file=fout)
             return b'error: unknown method'
 
 
 if __name__ == '__main__':
-    print('loading model files...')
     path = sys.argv[0].split('\\')
     path = '\\'.join(path[:-1])
-    path = path + '\\' if len(path) > 0 else ''
-    tfidf = load(path+'tfidf.joblib')
-    model = load(path+'model.joblib')
-    encoded_words = load_npz(path+'encoded_words.npz')
-    reviews = pd.read_csv(path+'reviews.csv', index_col='id')
-
-    server = Server(tfidf, model, encoded_words, reviews)
+    model_path = path + '\\model_data\\' if len(path) > 0 else 'model_data\\'
+    log_path = path + '\\' if len(path) > 0 else ''
+    log_path = log_path + sys.argv[1] if len(sys.argv) > 1 else None
+    
+    server = Server(model_path=model_path, log_file=log_path)
     server.start()
