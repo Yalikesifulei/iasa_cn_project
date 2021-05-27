@@ -1,6 +1,4 @@
-from joblib import load
 import re
-import nltk
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from sklearn.metrics.pairwise import cosine_similarity

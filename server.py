@@ -7,6 +7,12 @@ from joblib import load
 import pandas as pd
 from scipy.sparse import load_npz
 from datetime import datetime
+import os
+import pickle
+from _thread import start_new_thread
+import threading
+
+print_lock = threading.Lock()
 
 @contextlib.contextmanager
 def smart_open(fname=None):
@@ -19,10 +25,24 @@ def smart_open(fname=None):
 
 class Server:
     def __init__(self, model_path, host='127.0.0.1', port=8888, log_file=None):
+        self.thread_count = 0
+        self.welcome_message = 'Welcome! Enter 0 to authorize, 1 to register, 2 to use anonymously.'
         self.host = host
         self.port = port
         self.model_path = model_path
-        self.log_file = log_file
+        if log_file:
+            self.log_file = os.getcwd() + '\\' + log_file
+        else:
+            self.log_file = None
+        self.users_path = os.getcwd() + '\\users.dat'
+        if os.path.exists(self.users_path):
+            try:
+                with open(self.users_path, 'rb') as fin:
+                    self.users = pickle.load(fin)
+            except EOFError:
+                self.users = {}
+        else:
+            self.users = {}
         if self.log_file:
             print(f'logging into {self.log_file}')
             now = datetime.now()
@@ -54,18 +74,7 @@ class Server:
                     now = datetime.now()
                     with smart_open(self.log_file) as fout:
                         print(f'{now.strftime("%c")} | connected by {addr}', file=fout)
-                    data = conn.recv(1024)
-                    if not data:
-                        with smart_open(self.log_file) as fout:
-                            print('[error] client disconnected', file=fout)
-                    else:
-                        with smart_open(self.log_file) as fout:
-                            print(f'client message:\t {data.decode()}', file=fout)
-                        response = self.handle_request(data)
-                        conn.sendall(response)
-                        with smart_open(self.log_file) as fout:
-                            print(f'server message:\t {response.decode()}\n', file=fout)
-                        conn.close()
+                    start_new_thread(self.client_thread, (conn, addr))
                 except socket.timeout:
                     pass
                 except KeyboardInterrupt:
@@ -73,24 +82,46 @@ class Server:
         except KeyboardInterrupt:
             with smart_open(self.log_file) as fout:
                 print('[end]\tserver closed with KeyboardInterrupt\n', file=fout)
+            s.close()
             
+    def client_thread(self, conn, addr):
+        while True:
+            data = conn.recv(1024)
+            if not data:
+                with smart_open(self.log_file) as fout:
+                    print(f'[info] {addr[1]} client disconnected\n', file=fout)
+                break
+            else:
+                with smart_open(self.log_file) as fout:
+                    print(f'[info] {addr[1]} client message:\t {data.decode()}', file=fout)
+                response = self.handle_request(data)
+                conn.sendall(response)
+                with smart_open(self.log_file) as fout:
+                    print(f'[info] {addr[1]} server message:\t {response.decode()}\n', file=fout)
+        conn.close()
+
     def handle_request(self, data):
         req = json.loads(data.decode())
-        if req['method'] == 'predict':
-            res = predict(req['text'], self.tfidf, self.model)
+        req_method, req_text = req['method'], req['text']
+        if req_method == 'welcome':
+            return self.welcome_message.encode()
+        elif req_method == 'authorize':
+            print(req_text)
+        elif req_method == 'predict':
+            res = predict(req_text, self.tfidf, self.model)
             return b'negative' if res == 0 else b'positive'
-        elif req['method'] == 'predict_proba':
-            res = predict_proba(req['text'], self.tfidf, self.model)
+        elif req_method == 'predict_proba':
+            res = predict_proba(req_text, self.tfidf, self.model)
             res = 100*res[0, 1]
             res_str = f'positive {res:.3f}% | negative {100-res:.3f}%'
             return res_str.encode()
-        elif req['method'] == 'similar':
-            res = similar(req['text'], self.tfidf, self.encoded_words, self.reviews)
+        elif req_method == 'similar':
+            res = similar(req_text, self.tfidf, self.encoded_words, self.reviews)
             res_str = f'{res}'
             return res_str.encode()
         else:
             with smart_open(self.log_file) as fout:
-                print(f'[error]\tunknown method: {req["method"]}', file=fout)
+                print(f'[error]\tunknown method: {req_method}', file=fout)
             return b'error: unknown method'
 
 
