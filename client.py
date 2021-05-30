@@ -62,21 +62,30 @@ if __name__ == '__main__':
     conn, host, port, welcome_message = connect()
     print(f'Connected to {host}:{port}')
     print('Server message:', welcome_message)
-    auth = input('Enter authorization option: ')
-    if auth == '1' or auth == '2':
-        username = input('\tUsername: ')
-        password = get_pass(fernet)
-        if auth == '1':
-            print(authorize(conn, username, password))
-        else:
-            print(register(conn, username, password))
-    while True:
-        ans = input('Request: ')
-        if ans == 'disconnect':
-            disconnect(conn)
-            print('Disconnected!')
-            break
-        else:
-            ans = ans.split(' ')
-            method, text = ans[0], " ".join(ans[1:])
-            print('Server message:', request(conn, method, text))
+    try:
+        auth = input('Enter authorization option: ')
+        if auth == '1' or auth == '2':
+            username = input('\tUsername: ')
+            password = get_pass(fernet)
+            if auth == '1':
+                print(authorize(conn, username, password))
+            else:
+                print(register(conn, username, password))
+        while True:
+            try:
+                ans = input('Request: ')
+                if ans == 'disconnect':
+                    disconnect(conn)
+                    print('Disconnected!')
+                    break
+                else:
+                    ans = ans.split(' ')
+                    method, text = ans[0], " ".join(ans[1:])
+                    print('Server message:', request(conn, method, text))
+            except KeyboardInterrupt:
+                disconnect(conn)
+                print('\nDisconnected!')
+                break
+    except KeyboardInterrupt:
+        disconnect(conn)
+        print('\nDisconnected!')

@@ -31,7 +31,7 @@ class Server:
             - predict_proba 'text' to predict sentiment with probability
             - similar 'text' to show similar review from IMDB reviews dataset
             - history to show history of your requests (if authorized)
-        Enter disconnect if you want to disconnect.'''
+        Enter disconnect or press Ctrl+C if you want to disconnect.'''
         self.host = host
         self.port = port
         self.model_path = model_path
