@@ -80,7 +80,7 @@ if __name__ == '__main__':
                     break
                 else:
                     ans = ans.split(' ')
-                    method, text = ans[0], " ".join(ans[1:])
+                    method, text = ans[0], " ".join(ans[1:])[1:-1]
                     print('Server message:', request(conn, method, text))
             except KeyboardInterrupt:
                 disconnect(conn)

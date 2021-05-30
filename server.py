@@ -153,8 +153,7 @@ class Server:
             return res_str.encode()
         elif req_method == 'similar':
             res = similar(req_text, self.tfidf, self.encoded_words, self.reviews)
-            res_str = f'{res}'
-            return res_str.encode()
+            return res.encode()
         else:
             with smart_open(self.log_file) as fout:
                 print(f'[error]\tunknown method: {req_method}', file=fout)
