@@ -10,9 +10,8 @@ from datetime import datetime
 import os
 import pickle
 from _thread import start_new_thread
-import threading
-
-print_lock = threading.Lock()
+import base64
+from cryptography.fernet import Fernet
 
 @contextlib.contextmanager
 def smart_open(fname=None):
@@ -26,7 +25,13 @@ def smart_open(fname=None):
 class Server:
     def __init__(self, model_path, host='127.0.0.1', port=8888, log_file=None):
         self.thread_count = 0
-        self.welcome_message = 'Welcome! Enter 0 to authorize, 1 to register, 2 to use anonymously.'
+        self.welcome_message = '''Welcome! Enter 1 to authorize, 2 to register, 0 to use anonymously.
+        Available requests are:
+            - predict 'text' to predict text sentiment (positive/negative)
+            - predict_proba 'text' to predict sentiment with probability
+            - similar 'text' to show similar review from IMDB reviews dataset
+            - history to show history of your requests (if authorized)
+        Enter disconnect if you want to disconnect.'''
         self.host = host
         self.port = port
         self.model_path = model_path
@@ -43,11 +48,16 @@ class Server:
                 self.users = {}
         else:
             self.users = {}
+        self.current_users = []
         if self.log_file:
             print(f'logging into {self.log_file}')
             now = datetime.now()
             with smart_open(self.log_file) as fout:
                 print(f'----- {now.strftime("%c")} -----', file=fout)
+        with open(os.getcwd() + '\\key.dat', 'rb') as kf:
+            key = kf.read()
+        self.key = base64.b64decode(key)
+        self.fernet = Fernet(self.key)
         with smart_open(self.log_file) as fout:
             print('[info]\tloading model files...', file=fout)
         tick = datetime.now()    
@@ -82,6 +92,8 @@ class Server:
         except KeyboardInterrupt:
             with smart_open(self.log_file) as fout:
                 print('[end]\tserver closed with KeyboardInterrupt\n', file=fout)
+            with open(self.users_path, 'wb') as fout:
+                    pickle.dump(self.users, fout)
             s.close()
             
     def client_thread(self, conn, addr):
@@ -100,13 +112,37 @@ class Server:
                     print(f'[info] {addr[1]} server message:\t {response.decode()}\n', file=fout)
         conn.close()
 
+    def authorize(self, username, password):
+        if username in self.users.keys():
+            if self.fernet.decrypt(self.users[username]['password'].encode()) == self.fernet.decrypt(password.encode()):
+                self.current_users.append(username)
+                return b'ok'
+            else:
+                return b'Wrong password, try again'
+        else:
+            return b'User not found, try again'
+
+    def register(self, username, password):
+        if username not in self.users.keys():
+            self.users[username] = {'password': password, 'history': []}
+            with open(self.users_path, 'wb') as fout:
+                    pickle.dump(self.users, fout)
+            self.current_users.append(username)
+            return b'ok'
+        else:
+            return b'User already exists'
+
     def handle_request(self, data):
         req = json.loads(data.decode())
         req_method, req_text = req['method'], req['text']
         if req_method == 'welcome':
             return self.welcome_message.encode()
         elif req_method == 'authorize':
-            print(req_text)
+            username, password = req['text'].split('; ')
+            return self.authorize(username, password)
+        elif req_method == 'register':
+            username, password = req['text'].split('; ')
+            return self.register(username, password)
         elif req_method == 'predict':
             res = predict(req_text, self.tfidf, self.model)
             return b'negative' if res == 0 else b'positive'
@@ -122,7 +158,7 @@ class Server:
         else:
             with smart_open(self.log_file) as fout:
                 print(f'[error]\tunknown method: {req_method}', file=fout)
-            return b'error: unknown method'
+            return b'Error: unknown method'
 
 
 if __name__ == '__main__':

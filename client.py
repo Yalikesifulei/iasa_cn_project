@@ -1,40 +1,82 @@
 import socket
 import json
 import getpass
+import os
+import base64
+from cryptography.fernet import Fernet
+
+with open(os.getcwd() + '\\key.dat', 'rb') as kf:
+    key = kf.read()
+key = base64.b64decode(key)
+fernet = Fernet(key)
 
 def connect(host='127.0.0.1', port=8888):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((host, port))
     welcome_request = {'method': 'welcome', 'text': ''}
     s.sendall(json.dumps(welcome_request).encode())
-    welcome_message = s.recv(256)
+    welcome_message = s.recv(1024)
     return s, host, port, welcome_message.decode()
 
 def disconnect(conn):
     conn.close()
 
-def request(conn, req):
+def request(conn, method, text):
+    req = {'method': method, 'text': text}
     conn.sendall(json.dumps(req).encode())
     data = conn.recv(4096)
     return data.decode()
 
-if __name__ == '__main__':
-    method = 'predict_proba'
-    text = """What makes this film stand out, aside from its superb effects, 
-    humor and script, is the contrast between Tommy Lee Jones and Will Smith. 
-    While Jones is the emotionless, smarter and wiser one out of the two, 
-    Smith is the younger and more enthusiastic. These 'Men In Black' are on a 
-    mission to save Earth from a really, really nasty bug infestation. 
-    This is one Sci-Fi film that shouldn't be missed."""
-    conn, host, port, welcome_message = connect()
-    print(f'connected to {host}:{port}')
-    print('server message:', welcome_message)
-    while True:
-        print('server message:', request(conn, {'method': method, 'text': text}))
-        ans = input('\nDo you want to continue(y/n): ')
-        if ans == 'y':
-            continue
+def get_pass(fernet):
+    return fernet.encrypt(getpass.getpass('\tPassword: ').encode()).decode()
+
+def authorize(conn, username, password):
+    res = request(conn, 'authorize', f'{username}; {password}')
+    while res != 'ok':
+        again = input(f'{res}. Try again? (y/n, n means register) ')
+        if again.lower() == 'y':
+            username = input('\tUsername: ')
+            password = get_pass(fernet)
+            res = request(conn, 'authorize', f'{username}; {password}')
         else:
+            username = input('\tUsername: ')
+            password = get_pass(fernet)
+            return register(conn, username, password)
+    return f'You can make requests now, {username}!'
+
+def register(conn, username, password):
+    res = request(conn, 'register', f'{username}; {password}')
+    while res != 'ok':
+        again = input(f'{res}. Try again? (y/n, n means authorize) ')
+        if again.lower() == 'y':
+            username = input('\tUsername: ')
+            password = get_pass(fernet)
+            res = request(conn, 'register', f'{username}; {password}')
+        else:
+            username = input('\tUsername: ')
+            password = get_pass(fernet)
+            return authorize(conn, username, password)
+    return f'You can make requests now, {username}!'
+
+if __name__ == '__main__':
+    conn, host, port, welcome_message = connect()
+    print(f'Connected to {host}:{port}')
+    print('Server message:', welcome_message)
+    auth = input('Enter authorization option: ')
+    if auth == '1' or auth == '2':
+        username = input('\tUsername: ')
+        password = get_pass(fernet)
+        if auth == '1':
+            print(authorize(conn, username, password))
+        else:
+            print(register(conn, username, password))
+    while True:
+        ans = input('Request: ')
+        if ans == 'disconnect':
+            disconnect(conn)
+            print('Disconnected!')
             break
-    disconnect(conn)
-    print('disconnected')
+        else:
+            ans = ans.split(' ')
+            method, text = ans[0], " ".join(ans[1:])
+            print('Server message:', request(conn, method, text))

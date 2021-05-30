@@ -1,5 +1,0 @@
-[info]	loading model files...
-	done in 8.379568 sec
-[start]	listening at ('127.0.0.1', 8888)
-
-[end]	server closed with KeyboardInterrupt

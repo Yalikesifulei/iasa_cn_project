@@ -1,30 +1,31 @@
------ Sun Apr 11 11:58:42 2021 -----
+----- Sun May 30 10:46:06 2021 -----
 [info]	loading model files...
-	done in 6.924339 sec
+	done in 7.557603 sec
 [start]	listening at ('127.0.0.1', 8888)
 
-Sun Apr 11 12:00:49 2021 | connected by ('127.0.0.1', 65243)
-client message:	 {"method": "similar", "text": "Really bad movie"}
-server message:	 The banner says it all, this is one really bad movie, which is sad because I normally like Sheffer, and I have been impressed with Andrea Roth in other roles. This, however, is terrible. I wont waste any more time...its just that bad.
+Sun May 30 10:46:18 2021 | connected by ('127.0.0.1', 62412)
+[info] 62412 client message:	 {"method": "welcome", "text": ""}
+[info] 62412 server message:	 Welcome! Enter 1 to authorize, 2 to register, 0 to use anonymously.
+        Available requests are:
+            - predict 'text' to predict text sentiment (positive/negative)
+            - predict_proba 'text' to predict sentiment with probability
+            - similar 'text' to show similar review from IMDB reviews dataset
+            - history to show history of your requests (if authorized)
+        Enter disconnect if you want to disconnect.
 
-Sun Apr 11 12:00:51 2021 | connected by ('127.0.0.1', 65244)
-client message:	 {"method": "predict_proba", "text": "Really bad movie"}
-server message:	 positive 0.004% | negative 99.996%
+[info] 62412 client message:	 {"method": "authorize", "text": "admin; gAAAAABgs0Lc8hnB4r53uzQtXJ6MJKYHBlSdnflyy0m0PlzUAE44OMmyCorlVs_8REr3pJGP1oD7E3WxmKJoAMW8SafzTHHzaw=="}
+[info] 62412 server message:	 ok
 
-Sun Apr 11 12:00:54 2021 | connected by ('127.0.0.1', 65245)
-client message:	 {"method": "predict", "text": "Nice"}
-server message:	 positive
+[info] 62412 client message:	 {"method": "predict", "text": "'Nice movie!'"}
+[info] 62412 server message:	 positive
 
-[end]	server closed with KeyboardInterrupt
+[info] 62412 client message:	 {"method": "predict_proba", "text": "'Nice movie!'"}
+[info] 62412 server message:	 positive 93.900% | negative 6.100%
 
------ Sun Apr 11 12:01:29 2021 -----
-[info]	loading model files...
-	done in 9.310904 sec
-[start]	listening at ('127.0.0.1', 8888)
+[info] 62412 client message:	 {"method": "similar", "text": "'Nice movie!'"}
+[info] 62412 server message:	 Rock Star is a "nice" movie. Everyone is nice. Even the guys who aren't supposed to be nice, really are nice. Chris is a nice guy, who learns a lesson in life. He goes back to his girlfriend Emily, who is also nice. <br /><br />It's a good movie, despite all the niceness. Maybe I'm just used to all the angst of the X Gen music. In some ways the film was a caricature of Rock Stars and not hard edged enough to be believable.<br /><br />Mark Wahlberg's acting is quite good. Jennifer Aniston played her role well, but it was uncomplicated. She was a nice girl. <br /><br />Go see it. If you have ever been to a rock concert or seen Spinal Tap, go see it.
 
-Sun Apr 11 12:01:49 2021 | connected by ('127.0.0.1', 65258)
-client message:	 {"method": "predict_proba", "text": "Nice"}
-server message:	 positive 97.128% | negative 2.872%
+[info] 62412 client disconnected
 
 [end]	server closed with KeyboardInterrupt
 
