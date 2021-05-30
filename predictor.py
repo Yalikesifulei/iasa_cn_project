@@ -26,4 +26,5 @@ def similar(text, tfidf, encoded_words, reviews):
       transformed_text = tfidf.transform([process(text)])
       cos_sim = cosine_similarity(encoded_words, transformed_text)
       top_id = (-cos_sim).argsort(axis=0)[:1].flatten()[0]
-      return reviews.loc[top_id]['review']
+      res = reviews.loc[top_id]['review']
+      return re.sub('<.*?>', ' ', res)
