@@ -13,19 +13,42 @@ Sun May 30 10:46:18 2021 | connected by ('127.0.0.1', 62412)
             - history to show history of your requests (if authorized)
         Enter disconnect if you want to disconnect.
 
-[info] 62412 client message:	 {"method": "authorize", "text": "admin; gAAAAABgs0Lc8hnB4r53uzQtXJ6MJKYHBlSdnflyy0m0PlzUAE44OMmyCorlVs_8REr3pJGP1oD7E3WxmKJoAMW8SafzTHHzaw=="}
-[info] 62412 server message:	 ok
+----- Sun May 30 17:59:44 2021 -----
+[info]	loading model files...
+	done in 5.783473 sec
+[start]	listening at ('127.0.0.1', 8888)
 
-[info] 62412 client message:	 {"method": "predict", "text": "'Nice movie!'"}
-[info] 62412 server message:	 positive
+Sun May 30 18:00:50 2021 | connected by ('127.0.0.1', 53355)
+[info] 53355 client message:	 {"method": "welcome", "text": ""}
+[info] 53355 server message:	 Welcome! Enter 1 to authorize, 2 to register, 0 to use anonymously.
+        Available requests are:
+            - predict 'text' to predict text sentiment (positive/negative)
+            - predict_proba 'text' to predict sentiment with probability
+            - similar 'text' to show similar review from IMDB reviews dataset
+            - history to show history of your requests (if authorized)
+        Enter disconnect or press Ctrl+C if you want to disconnect.
 
-[info] 62412 client message:	 {"method": "predict_proba", "text": "'Nice movie!'"}
-[info] 62412 server message:	 positive 93.900% | negative 6.100%
+[info] 53355 client message:	 {"method": "register", "text": "admin; gAAAAABgs6inq77jVewX3xxcYqlG2F9XpIuMdj-n-25HoEluJ8_BqTaW5nlOTnC8OJQF-VQT4-S-gIGo78qsHn80pSPsOyxzeQ=="}
+[info] 53355 server message:	 auth_ok
 
-[info] 62412 client message:	 {"method": "similar", "text": "'Nice movie!'"}
-[info] 62412 server message:	 Rock Star is a "nice" movie. Everyone is nice. Even the guys who aren't supposed to be nice, really are nice. Chris is a nice guy, who learns a lesson in life. He goes back to his girlfriend Emily, who is also nice. <br /><br />It's a good movie, despite all the niceness. Maybe I'm just used to all the angst of the X Gen music. In some ways the film was a caricature of Rock Stars and not hard edged enough to be believable.<br /><br />Mark Wahlberg's acting is quite good. Jennifer Aniston played her role well, but it was uncomplicated. She was a nice girl. <br /><br />Go see it. If you have ever been to a rock concert or seen Spinal Tap, go see it.
+[info] 53355 client message:	 {"method": "predict", "text": "Nice movie!"}
+[info] 53355 server message:	 positive
 
-[info] 62412 client disconnected
+[info] 53355 client message:	 {"method": "predict_proba", "text": "Nice movie!"}
+[info] 53355 server message:	 positive 93.900% | negative 6.100%
+
+[info] 53355 client message:	 {"method": "similar", "text": "Nice movie!"}
+[info] 53355 server message:	 Rock Star is a "nice" movie. Everyone is nice. Even the guys who aren't supposed to be nice, really are nice. Chris is a nice guy, who learns a lesson in life. He goes back to his girlfriend Emily, who is also nice.   It's a good movie, despite all the niceness. Maybe I'm just used to all the angst of the X Gen music. In some ways the film was a caricature of Rock Stars and not hard edged enough to be believable.  Mark Wahlberg's acting is quite good. Jennifer Aniston played her role well, but it was uncomplicated. She was a nice girl.   Go see it. If you have ever been to a rock concert or seen Spinal Tap, go see it.
+
+[info] 53355 client message:	 {"method": "history", "text": "admin"}
+[info] 53355 server message:	 
+	predict 'Nice movie!'
+	predict_proba 'Nice movie!'
+	similar 'Nice movie!'
+	history
+
+
+[info] 53355 client disconnected
 
 [end]	server closed with KeyboardInterrupt
 

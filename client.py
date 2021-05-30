@@ -32,7 +32,7 @@ def get_pass(fernet):
 
 def authorize(conn, username, password):
     res = request(conn, 'authorize', f'{username}; {password}')
-    while res != 'ok':
+    while res != 'auth_ok':
         again = input(f'{res}. Try again? (y/n, n means register) ')
         if again.lower() == 'y':
             username = input('\tUsername: ')
@@ -46,7 +46,7 @@ def authorize(conn, username, password):
 
 def register(conn, username, password):
     res = request(conn, 'register', f'{username}; {password}')
-    while res != 'ok':
+    while res != 'auth_ok':
         again = input(f'{res}. Try again? (y/n, n means authorize) ')
         if again.lower() == 'y':
             username = input('\tUsername: ')
@@ -78,6 +78,11 @@ if __name__ == '__main__':
                     disconnect(conn)
                     print('Disconnected!')
                     break
+                elif ans == 'history':
+                    if auth == '1' or auth == '2':
+                        print('Server message:', request(conn, 'history', username))
+                    else:
+                        print('History is available only for authorized users')
                 else:
                     ans = ans.split(' ')
                     method, text = ans[0], " ".join(ans[1:])[1:-1]

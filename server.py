@@ -97,16 +97,23 @@ class Server:
             s.close()
             
     def client_thread(self, conn, addr):
+        is_authorized = False
         while True:
             data = conn.recv(1024)
             if not data:
                 with smart_open(self.log_file) as fout:
                     print(f'[info] {addr[1]} client disconnected\n', file=fout)
+                    self.current_users.remove(username)
                 break
             else:
                 with smart_open(self.log_file) as fout:
                     print(f'[info] {addr[1]} client message:\t {data.decode()}', file=fout)
+                if is_authorized:
+                    self.users[username]['history'].append(data.decode())
                 response = self.handle_request(data)
+                if response.decode() == 'auth_ok':
+                    is_authorized = True
+                    username = json.loads(data.decode())['text'].split('; ')[0]
                 conn.sendall(response)
                 with smart_open(self.log_file) as fout:
                     print(f'[info] {addr[1]} server message:\t {response.decode()}\n', file=fout)
@@ -116,7 +123,7 @@ class Server:
         if username in self.users.keys():
             if self.fernet.decrypt(self.users[username]['password'].encode()) == self.fernet.decrypt(password.encode()):
                 self.current_users.append(username)
-                return b'ok'
+                return b'auth_ok'
             else:
                 return b'Wrong password, try again'
         else:
@@ -128,9 +135,20 @@ class Server:
             with open(self.users_path, 'wb') as fout:
                     pickle.dump(self.users, fout)
             self.current_users.append(username)
-            return b'ok'
+            return b'auth_ok'
         else:
             return b'User already exists'
+
+    def get_history(self, username):
+        res = '\n'
+        for hist in self.users[username]['history']:
+            req = json.loads(hist)
+            res = res + '\t' + req['method']
+            if req['method'] != 'history':
+                res = res + ' ' + f"'{req['text']}'\n"
+            else:
+                res = res + '\n'
+        return res.encode()
 
     def handle_request(self, data):
         req = json.loads(data.decode())
@@ -154,6 +172,8 @@ class Server:
         elif req_method == 'similar':
             res = similar(req_text, self.tfidf, self.encoded_words, self.reviews)
             return res.encode()
+        elif req_method == 'history':
+            return self.get_history(req['text'])
         else:
             with smart_open(self.log_file) as fout:
                 print(f'[error]\tunknown method: {req_method}', file=fout)
