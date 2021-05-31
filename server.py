@@ -25,13 +25,13 @@ def smart_open(fname=None):
 class Server:
     def __init__(self, model_path, host='127.0.0.1', port=8888, log_file=None):
         self.thread_count = 0
-        self.welcome_message = '''Welcome! Enter 1 to authorize, 2 to register, 0 to use anonymously.
+        self.auth_opt = {'authorize': '1', 'register': '2', 'use anonymously': '0', 'ok_code': 'auth_ok'}
+        self.welcome_message = f'''Welcome! Enter {self.auth_opt['authorize']} to authorize, {self.auth_opt['register']} to register, {self.auth_opt['use anonymously']} to use anonymously.
         Available requests are:
             - predict 'text' to predict text sentiment (positive/negative)
             - predict_proba 'text' to predict sentiment with probability
             - similar 'text' to show similar review from IMDB reviews dataset
-            - history to show history of your requests (if authorized)
-        Enter disconnect or press Ctrl+C if you want to disconnect.'''
+            - history to show history of your requests (if authorized)'''
         self.host = host
         self.port = port
         self.model_path = model_path
@@ -103,7 +103,8 @@ class Server:
             if not data:
                 with smart_open(self.log_file) as fout:
                     print(f'[info] {addr[1]} client disconnected\n', file=fout)
-                    self.current_users.remove(username)
+                    if is_authorized:
+                        self.current_users.remove(username)
                 break
             else:
                 with smart_open(self.log_file) as fout:
@@ -111,7 +112,7 @@ class Server:
                 if is_authorized:
                     self.users[username]['history'].append(data.decode())
                 response = self.handle_request(data)
-                if response.decode() == 'auth_ok':
+                if response.decode() == self.auth_opt['ok_code']:
                     is_authorized = True
                     username = json.loads(data.decode())['text'].split('; ')[0]
                 conn.sendall(response)
@@ -123,7 +124,7 @@ class Server:
         if username in self.users.keys():
             if self.fernet.decrypt(self.users[username]['password'].encode()) == self.fernet.decrypt(password.encode()):
                 self.current_users.append(username)
-                return b'auth_ok'
+                return self.auth_opt['ok_code'].encode()
             else:
                 return b'Wrong password, try again'
         else:
@@ -135,7 +136,7 @@ class Server:
             with open(self.users_path, 'wb') as fout:
                     pickle.dump(self.users, fout)
             self.current_users.append(username)
-            return b'auth_ok'
+            return self.auth_opt['ok_code'].encode()
         else:
             return b'User already exists'
 
@@ -154,12 +155,15 @@ class Server:
         req = json.loads(data.decode())
         req_method, req_text = req['method'], req['text']
         if req_method == 'welcome':
-            return self.welcome_message.encode()
+            if req_text == 'auth_opt':
+                return json.dumps(self.auth_opt).encode()
+            else:
+                return self.welcome_message.encode()
         elif req_method == 'authorize':
-            username, password = req['text'].split('; ')
+            username, password = req_text.split('; ')
             return self.authorize(username, password)
         elif req_method == 'register':
-            username, password = req['text'].split('; ')
+            username, password = req_text.split('; ')
             return self.register(username, password)
         elif req_method == 'predict':
             res = predict(req_text, self.tfidf, self.model)
@@ -173,7 +177,7 @@ class Server:
             res = similar(req_text, self.tfidf, self.encoded_words, self.reviews)
             return res.encode()
         elif req_method == 'history':
-            return self.get_history(req['text'])
+            return self.get_history(req_text)
         else:
             with smart_open(self.log_file) as fout:
                 print(f'[error]\tunknown method: {req_method}', file=fout)
