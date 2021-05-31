@@ -5,7 +5,7 @@ import os
 import base64
 from cryptography.fernet import Fernet
 
-with open(os.getcwd() + '\\key.dat', 'rb') as kf:
+with open(os.path.join(os.getcwd(), 'key.dat')) as kf:
     key = kf.read()
 key = base64.b64decode(key)
 fernet = Fernet(key)

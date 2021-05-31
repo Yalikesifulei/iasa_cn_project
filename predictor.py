@@ -4,7 +4,7 @@ import pickle
 from nltk.tokenize import word_tokenize
 from sklearn.metrics.pairwise import cosine_similarity
 
-with open(os.getcwd() + '\\model_data\\stopwords.dat', 'rb') as fin:
+with open(os.path.join(os.getcwd(), 'model_data', 'stopwords.dat'), 'rb') as fin:
     stopwords = pickle.load(fin)
 
 def process(text):

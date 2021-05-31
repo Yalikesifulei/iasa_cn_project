@@ -35,11 +35,8 @@ class Server:
         self.host = host
         self.port = port
         self.model_path = model_path
-        if log_file:
-            self.log_file = os.getcwd() + '\\' + log_file
-        else:
-            self.log_file = None
-        self.users_path = os.getcwd() + '\\users.dat'
+        self.log_file = log_file if log_file else None
+        self.users_path = os.path.join(os.getcwd(), 'users.dat')
         if os.path.exists(self.users_path):
             try:
                 with open(self.users_path, 'rb') as fin:
@@ -54,17 +51,17 @@ class Server:
             now = datetime.now()
             with smart_open(self.log_file) as fout:
                 print(f'----- {now.strftime("%c")} -----', file=fout)
-        with open(os.getcwd() + '\\key.dat', 'rb') as kf:
+        with open(os.path.join(os.getcwd(), 'key.dat'), 'rb') as kf:
             key = kf.read()
         self.key = base64.b64decode(key)
         self.fernet = Fernet(self.key)
         with smart_open(self.log_file) as fout:
             print('[info]\tloading model files...', file=fout)
         tick = datetime.now()    
-        self.tfidf = load(self.model_path + 'tfidf.joblib')
-        self.model = load(self.model_path + 'model.joblib')
-        self.encoded_words = load_npz(self.model_path + 'encoded_words.npz')
-        self.reviews = pd.read_csv(self.model_path + 'reviews.csv', index_col='id')
+        self.tfidf = load(os.path.join(self.model_path, 'tfidf.joblib'))
+        self.model = load(os.path.join(self.model_path, 'model.joblib'))
+        self.encoded_words = load_npz(os.path.join(self.model_path, 'encoded_words.npz'))
+        self.reviews = pd.read_csv(os.path.join(self.model_path, 'reviews.csv'), index_col='id')
         tock = datetime.now()
         with smart_open(self.log_file) as fout:
             print(f'\tdone in {(tock - tick).seconds}.{(tock - tick).microseconds} sec', file=fout)
@@ -185,11 +182,8 @@ class Server:
 
 
 if __name__ == '__main__':
-    path = sys.argv[0].split('\\')
-    path = '\\'.join(path[:-1])
-    model_path = path + '\\model_data\\' if len(path) > 0 else 'model_data\\'
-    log_path = path + '\\' if len(path) > 0 else ''
-    log_path = log_path + sys.argv[1] if len(sys.argv) > 1 else None
-    
+    path = os.getcwd()
+    model_path = os.path.join(path, 'model_data')
+    log_path =  os.path.join(path, sys.argv[1]) if len(sys.argv) > 1 else None
     server = Server(model_path=model_path, log_file=log_path)
     server.start()
