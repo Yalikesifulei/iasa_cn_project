@@ -1,6 +1,9 @@
 import re
 import os
 import pickle
+import nltk
+if os.path.join(os.getcwd(), 'model_data'):
+    nltk.data.path.append(os.path.join(os.getcwd(), 'model_data'))
 from nltk.tokenize import word_tokenize
 from sklearn.metrics.pairwise import cosine_similarity
 
